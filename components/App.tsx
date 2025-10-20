@@ -9,6 +9,10 @@ import AdminRegistration from './AdminRegistration';
 import DriverLogin from './DriverLogin';
 import CustomerDashboard from './CustomerDashboard';
 import BookTanker from './BookTanker';
+import OwnerDashboard from './OwnerDashboard';
+import FleetManagement from './FleetManagement';
+import AddVehicle from './AddVehicle';
+import DriversManagement from './DriversManagement';
 
 export type RoleId = 'customer' | 'admin' | 'driver';
 
@@ -24,7 +28,11 @@ type CurrentScreen =
   | 'adminRegistration'
   | 'driverLogin'
   | 'customerDashboard'
-  | 'bookTanker';
+  | 'ownerDashboard'
+  | 'bookTanker'
+  | 'fleetManagement'
+  | 'addVehicle'
+  | 'driversManagement';
 
 const App = (): React.ReactElement => {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>('roleSelection');
@@ -71,6 +79,9 @@ const App = (): React.ReactElement => {
   const handleLogin = (role: RoleId, credentials: Credentials): void => {
     if (role === 'customer') {
       setCurrentScreen('customerDashboard');
+    }
+    if (role === 'admin') {
+      setCurrentScreen('ownerDashboard');
     }
   };
 
@@ -179,6 +190,14 @@ const App = (): React.ReactElement => {
             onNavigate={handleDashboardNavigation}
           />
         );
+      case 'ownerDashboard':
+        return (
+          <OwnerDashboard
+            onBack={handleBackToAdminLogin}
+            onOpenFleet={() => setCurrentScreen('fleetManagement')}
+            onOpenDrivers={() => setCurrentScreen('driversManagement')}
+          />
+        );
       case 'bookTanker':
         return (
           <BookTanker
@@ -196,6 +215,33 @@ const App = (): React.ReactElement => {
                 ],
                 { cancelable: false }
               );
+            }}
+          />
+        );
+      case 'fleetManagement':
+        return (
+          <FleetManagement
+            onBack={() => setCurrentScreen('ownerDashboard')}
+            onAddVehicle={() => setCurrentScreen('addVehicle')}
+          />
+        );
+      case 'addVehicle':
+        return (
+          <AddVehicle
+            onBack={() => setCurrentScreen('fleetManagement')}
+            onSubmit={(vehicleData) => {
+              console.log('Vehicle added:', vehicleData);
+              // Here you would typically save to your backend/database
+            }}
+          />
+        );
+      case 'driversManagement':
+        return (
+          <DriversManagement
+            onBack={() => setCurrentScreen('ownerDashboard')}
+            onAddDriver={() => {
+              // TODO: Implement add driver functionality
+              console.log('Add driver pressed');
             }}
           />
         );

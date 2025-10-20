@@ -49,7 +49,7 @@ const AdminLogin = ({ onBack, onLogin, onCreateAccount }: Props): React.ReactEle
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <ArrowRightIcon size={24} color="#FFFFFF" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.title}>Admin Login</Text>
+          <Text style={styles.title}>Owner Login</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -107,7 +107,7 @@ const AdminLogin = ({ onBack, onLogin, onCreateAccount }: Props): React.ReactEle
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.createAccountButton} onPress={handleCreateAccount}>
-            <Text style={styles.createAccountButtonText}>Create Admin Account</Text>
+            <Text style={styles.createAccountButtonText}>Create Owner Account</Text>
           </TouchableOpacity>
         </View>
 

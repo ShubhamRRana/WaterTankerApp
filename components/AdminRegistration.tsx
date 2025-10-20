@@ -66,7 +66,7 @@ const AdminRegistration = ({ onBack, onRegister }: Props): React.ReactElement =>
     try {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1500));
 
-      Alert.alert('Admin Registration Successful', 'Your admin account has been created successfully! You can now login.', [
+      Alert.alert('Tanker Owner Registration Successful', 'Your tanker owner account has been created successfully! You can now login.', [
         {
           text: 'OK',
           onPress: () => {
@@ -75,7 +75,7 @@ const AdminRegistration = ({ onBack, onRegister }: Props): React.ReactElement =>
         },
       ]);
     } catch (error) {
-      Alert.alert('Registration Failed', 'There was an error creating your admin account. Please try again.', [{ text: 'OK' }]);
+      Alert.alert('Registration Failed', 'There was an error creating your tanker owner account. Please try again.', [{ text: 'OK' }]);
     } finally {
       setIsLoading(false);
     }
@@ -107,14 +107,14 @@ const AdminRegistration = ({ onBack, onRegister }: Props): React.ReactElement =>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <ArrowRightIcon size={24} color="#FFFFFF" style={{ transform: [{ rotate: '180deg' }] }} />
         </TouchableOpacity>
-        <Text style={styles.title}>Create Admin Account</Text>
+        <Text style={styles.title}>Create Owner Account</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Registration Form */}
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.formContainer}>
-          <Text style={styles.subtitle}>Join WaterTanker as an Administrator</Text>
+          <Text style={styles.subtitle}>Join WaterTanker as a Tanker Owner</Text>
 
           <InputField icon={UserIcon} placeholder="Full Name" value={formData.fullName} onChangeText={(value) => handleInputChange('fullName', value)} error={errors.fullName} />
           <InputField icon={PhoneIcon} placeholder="Phone Number" value={formData.phoneNumber} onChangeText={(value) => handleInputChange('phoneNumber', value)} keyboardType="phone-pad" error={errors.phoneNumber} />
@@ -123,11 +123,11 @@ const AdminRegistration = ({ onBack, onRegister }: Props): React.ReactElement =>
           <InputField icon={UserIcon} placeholder="Address" value={formData.address} onChangeText={(value) => handleInputChange('address', value)} error={errors.address} />
 
           <TouchableOpacity style={[styles.registerButton, isLoading && styles.registerButtonDisabled]} onPress={handleRegister} disabled={isLoading}>
-            {isLoading ? <Text style={styles.registerButtonText}>Creating Admin Account...</Text> : (<><Text style={styles.registerButtonText}>Create Admin Account</Text><CheckIcon size={20} color="#000000" /></>)}
+            {isLoading ? <Text style={styles.registerButtonText}>Creating Tanker Owner Account...</Text> : (<><Text style={styles.registerButtonText}>Create Tanker Owner Account</Text><CheckIcon size={20} color="#000000" /></>)}
           </TouchableOpacity>
 
           <View style={styles.loginPrompt}>
-            <Text style={styles.loginPromptText}>Already have an admin account? </Text>
+            <Text style={styles.loginPromptText}>Already have a tanker owner account? </Text>
             <TouchableOpacity onPress={onBack}>
               <Text style={styles.loginLinkText}>Login here</Text>
             </TouchableOpacity>

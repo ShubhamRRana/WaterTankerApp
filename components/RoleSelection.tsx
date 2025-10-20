@@ -113,7 +113,7 @@ const RoleSelection = ({ onRoleSelect }: Props): React.ReactElement => {
 
   const roles: Array<{ id: RoleId; title: string; description: string; featured: boolean; icon: any }> = [
     { id: 'customer', title: 'Customer', description: 'Book water tanker services', icon: UserIcon, featured: true },
-    { id: 'admin', title: 'Admin', description: 'Manage operations and users', icon: ShieldCheckIcon, featured: false },
+    { id: 'admin', title: 'Tanker Owner', description: 'Manage your water tanker business', icon: ShieldCheckIcon, featured: false },
     { id: 'driver', title: 'Driver', description: 'Deliver water tanker services', icon: TruckIcon, featured: false },
   ];
 

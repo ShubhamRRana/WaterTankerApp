@@ -3,7 +3,9 @@ alwaysApply: true
 description: UI Design System for Water Tanker App
 ---
 
-ADont update the README.md file with minor changes. Update only the major changes done to the project.
+Dont update the README.md file with minor changes. Update only the major changes done to the project.
+
+For every screenshot attached dont use the design shown in the image, use the UI design what we are using for our Project.
 
 # UI Design System
 
