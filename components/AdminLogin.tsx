@@ -1,27 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShieldCheckIcon, LockClosedIcon, ArrowRightIcon } from 'react-native-heroicons/outline';
 
-const AdminLogin = ({ onBack, onLogin, onCreateAccount }) => {
+type Props = {
+  onBack: () => void;
+  onLogin: (role: 'admin', credentials: { phoneNumber: string; password: string }) => void;
+  onCreateAccount?: () => void;
+};
+
+const AdminLogin = ({ onBack, onLogin, onCreateAccount }: Props): React.ReactElement => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({ phoneNumber: '', password: '' });
+  const [errors, setErrors] = useState<{ phoneNumber: string; password: string }>({ phoneNumber: '', password: '' });
 
-  const validatePhone = (value) => {
+  const validatePhone = (value: string): string => {
     const digitsOnly = value.replace(/\D/g, '');
     if (digitsOnly.length === 0) return 'Phone number is required';
     if (digitsOnly.length !== 10) return 'Enter a valid 10-digit phone number';
     return '';
   };
 
-  const validatePassword = (value) => {
+  const validatePassword = (value: string): string => {
     if (!value) return 'Password is required';
     if (value.length < 6) return 'Password must be at least 6 characters';
     return '';
   };
 
-  const handleLogin = () => {
+  const handleLogin = (): void => {
     const phoneError = validatePhone(phoneNumber);
     const passError = validatePassword(password);
     const newErrors = { phoneNumber: phoneError, password: passError };
@@ -30,8 +36,7 @@ const AdminLogin = ({ onBack, onLogin, onCreateAccount }) => {
     onLogin('admin', { phoneNumber, password });
   };
 
-  const handleCreateAccount = () => {
-    // TODO: Implement create account logic
+  const handleCreateAccount = (): void => {
     if (onCreateAccount) {
       onCreateAccount();
     }

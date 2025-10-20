@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, StyleSheet, Animated, Dimensions } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RoleSelection from './RoleSelection';
@@ -10,24 +10,39 @@ import DriverLogin from './DriverLogin';
 import CustomerDashboard from './CustomerDashboard';
 import BookTanker from './BookTanker';
 
-const App = () => {
-  const [currentScreen, setCurrentScreen] = useState('roleSelection');
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [touchPosition, setTouchPosition] = useState({ x: 0, y: 0 });
+export type RoleId = 'customer' | 'admin' | 'driver';
+
+type Credentials = { phoneNumber: string; password: string };
+
+type TouchPosition = { x: number; y: number };
+
+type CurrentScreen =
+  | 'roleSelection'
+  | 'customerLogin'
+  | 'customerRegistration'
+  | 'adminLogin'
+  | 'adminRegistration'
+  | 'driverLogin'
+  | 'customerDashboard'
+  | 'bookTanker';
+
+const App = (): React.ReactElement => {
+  const [currentScreen, setCurrentScreen] = useState<CurrentScreen>('roleSelection');
+  const [selectedRole, setSelectedRole] = useState<RoleId | null>(null);
+  const [touchPosition, setTouchPosition] = useState<TouchPosition>({ x: 0, y: 0 });
   const slideAnimation = useRef(new Animated.Value(Dimensions.get('window').height)).current;
   const isAnimating = useRef(false);
 
-  const handleRoleSelect = (roleId, position = { x: 0, y: 0 }) => {
+  const handleRoleSelect = (roleId: RoleId, position: TouchPosition = { x: 0, y: 0 }): void => {
     if (isAnimating.current) return;
-    
+
     setSelectedRole(roleId);
     setTouchPosition(position);
-    setCurrentScreen(`${roleId}Login`);
-    
-    // Start slide-up animation
+    setCurrentScreen(`${roleId}Login` as CurrentScreen);
+
     isAnimating.current = true;
     slideAnimation.setValue(Dimensions.get('window').height);
-    
+
     Animated.timing(slideAnimation, {
       toValue: 0,
       duration: 400,
@@ -37,12 +52,11 @@ const App = () => {
     });
   };
 
-  const handleBackToRoleSelection = () => {
+  const handleBackToRoleSelection = (): void => {
     if (isAnimating.current) return;
-    
-    // Start slide-down animation
+
     isAnimating.current = true;
-    
+
     Animated.timing(slideAnimation, {
       toValue: Dimensions.get('window').height,
       duration: 300,
@@ -54,69 +68,60 @@ const App = () => {
     });
   };
 
-  const handleLogin = (role, credentials) => {
+  const handleLogin = (role: RoleId, credentials: Credentials): void => {
     console.log(`${role} login attempted with:`, credentials);
-    // TODO: Implement actual login logic here
-    // For now, just navigate to dashboard for customer role
     if (role === 'customer') {
       setCurrentScreen('customerDashboard');
     }
   };
 
-  const handleDashboardNavigation = (screen) => {
-    console.log(`Navigate to ${screen}`);
+  const handleDashboardNavigation = (screen: 'bookTanker' | 'trackTanker' | 'profile'): void => {
     if (screen === 'bookTanker') {
       setCurrentScreen('bookTanker');
     }
   };
 
-  const handleBackToLogin = () => {
+  const handleBackToLogin = (): void => {
     setCurrentScreen('customerLogin');
   };
 
-  const handleBackToAdminLogin = () => {
+  const handleBackToAdminLogin = (): void => {
     setCurrentScreen('adminLogin');
   };
 
-  const handleCreateAccount = () => {
-    console.log('Create account requested');
+  const handleCreateAccount = (): void => {
     setCurrentScreen('customerRegistration');
   };
 
-  const handleCreateAdminAccount = () => {
-    console.log('Create admin account requested');
+  const handleCreateAdminAccount = (): void => {
     setCurrentScreen('adminRegistration');
   };
 
-  const handleRegistration = (userData) => {
+  const handleRegistration = (userData: Record<string, unknown>): void => {
     console.log('Registration successful:', userData);
-    // TODO: Implement actual registration logic
-    // For now, just navigate back to login
     setCurrentScreen('customerLogin');
   };
 
-  const handleAdminRegistration = (userData) => {
+  const handleAdminRegistration = (userData: Record<string, unknown>): void => {
     console.log('Admin registration successful:', userData);
-    // TODO: Implement actual admin registration logic
-    // For now, just navigate back to admin login
     setCurrentScreen('adminLogin');
   };
 
-  const renderCurrentScreen = () => {
+  const renderCurrentScreen = (): React.ReactElement => {
     switch (currentScreen) {
       case 'roleSelection':
         return <RoleSelection onRoleSelect={handleRoleSelect} />;
       case 'customerLogin':
         return (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.loginScreen,
               {
-                transform: [{ translateY: slideAnimation }]
-              }
+                transform: [{ translateY: slideAnimation }],
+              },
             ]}
           >
-            <CustomerLogin 
+            <CustomerLogin
               onBack={handleBackToRoleSelection}
               onLogin={handleLogin}
               onCreateAccount={handleCreateAccount}
@@ -125,22 +130,22 @@ const App = () => {
         );
       case 'customerRegistration':
         return (
-          <CustomerRegistration 
+          <CustomerRegistration
             onBack={handleBackToLogin}
             onRegister={handleRegistration}
           />
         );
       case 'adminLogin':
         return (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.loginScreen,
               {
-                transform: [{ translateY: slideAnimation }]
-              }
+                transform: [{ translateY: slideAnimation }],
+              },
             ]}
           >
-            <AdminLogin 
+            <AdminLogin
               onBack={handleBackToRoleSelection}
               onLogin={handleLogin}
               onCreateAccount={handleCreateAdminAccount}
@@ -149,22 +154,22 @@ const App = () => {
         );
       case 'adminRegistration':
         return (
-          <AdminRegistration 
+          <AdminRegistration
             onBack={handleBackToAdminLogin}
             onRegister={handleAdminRegistration}
           />
         );
       case 'driverLogin':
         return (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.loginScreen,
               {
-                transform: [{ translateY: slideAnimation }]
-              }
+                transform: [{ translateY: slideAnimation }],
+              },
             ]}
           >
-            <DriverLogin 
+            <DriverLogin
               onBack={handleBackToRoleSelection}
               onLogin={handleLogin}
             />
@@ -172,14 +177,14 @@ const App = () => {
         );
       case 'customerDashboard':
         return (
-          <CustomerDashboard 
+          <CustomerDashboard
             onBack={handleBackToLogin}
             onNavigate={handleDashboardNavigation}
           />
         );
       case 'bookTanker':
         return (
-          <BookTanker 
+          <BookTanker
             onBack={() => setCurrentScreen('customerDashboard')}
             onSubmit={(payload) => {
               console.log('Book tanker request:', payload);
@@ -194,9 +199,7 @@ const App = () => {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.container}>
-        {renderCurrentScreen()}
-      </View>
+      <View style={styles.container}>{renderCurrentScreen()}</View>
     </SafeAreaProvider>
   );
 };

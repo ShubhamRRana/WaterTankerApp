@@ -1,40 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { UserIcon, LockClosedIcon, ArrowRightIcon } from 'react-native-heroicons/outline';
+import { TruckIcon, LockClosedIcon, ArrowRightIcon } from 'react-native-heroicons/outline';
 
-const CustomerLogin = ({ onBack, onLogin, onCreateAccount }) => {
+type Props = {
+  onBack: () => void;
+  onLogin: (role: 'driver', credentials: { phoneNumber: string; password: string }) => void;
+};
+
+const DriverLogin = ({ onBack, onLogin }: Props): React.ReactElement => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({ phoneNumber: '', password: '' });
+  const [errors, setErrors] = useState<{ phoneNumber: string; password: string }>({ phoneNumber: '', password: '' });
 
-  const validatePhone = (value) => {
+  const validatePhone = (value: string): string => {
     const digitsOnly = value.replace(/\D/g, '');
     if (digitsOnly.length === 0) return 'Phone number is required';
     if (digitsOnly.length !== 10) return 'Enter a valid 10-digit phone number';
     return '';
   };
 
-  const validatePassword = (value) => {
+  const validatePassword = (value: string): string => {
     if (!value) return 'Password is required';
     if (value.length < 6) return 'Password must be at least 6 characters';
     return '';
   };
 
-  const handleLogin = () => {
+  const handleLogin = (): void => {
     const phoneError = validatePhone(phoneNumber);
     const passError = validatePassword(password);
     const newErrors = { phoneNumber: phoneError, password: passError };
     setErrors(newErrors);
     if (phoneError || passError) return;
-    onLogin('customer', { phoneNumber, password });
-  };
-
-  const handleCreateAccount = () => {
-    // TODO: Implement create account logic
-    if (onCreateAccount) {
-      onCreateAccount();
-    }
+    onLogin('driver', { phoneNumber, password });
   };
 
   return (
@@ -44,14 +42,14 @@ const CustomerLogin = ({ onBack, onLogin, onCreateAccount }) => {
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <ArrowRightIcon size={24} color="#FFFFFF" style={{ transform: [{ rotate: '180deg' }] }} />
           </TouchableOpacity>
-          <Text style={styles.title}>Customer Login</Text>
+          <Text style={styles.title}>Driver Login</Text>
           <View style={styles.placeholder} />
         </View>
 
         {/* Login Form */}
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
-            <UserIcon size={20} color="#B0B0B0" style={styles.inputIcon} />
+            <TruckIcon size={20} color="#B0B0B0" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Phone Number"
@@ -98,10 +96,6 @@ const CustomerLogin = ({ onBack, onLogin, onCreateAccount }) => {
             <Text style={styles.loginButtonText}>Login</Text>
             <ArrowRightIcon size={20} color="#000000" />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.createAccountButton} onPress={handleCreateAccount}>
-            <Text style={styles.createAccountButtonText}>Create New Account</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Footer */}
@@ -118,122 +112,25 @@ const CustomerLogin = ({ onBack, onLogin, onCreateAccount }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  backButton: {
-    padding: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 34,
-  },
-  formContainer: {
-    paddingHorizontal: 20,
-    gap: 20,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  errorText: {
-    color: '#DC2626',
-    fontSize: 12,
-    marginTop: 6,
-    marginLeft: 4,
-  },
-  loginButton: {
-    backgroundColor: '#D4AF37',
-    borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 20,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#7F6A28',
-  },
-  loginButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  createAccountButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#D4AF37',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  createAccountButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#D4AF37',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: '#1A1A1A',
-    marginTop: 'auto',
-  },
-  footerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  footerIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#000000',
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  footerIconText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  footerText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-  },
+  container: { flex: 1, backgroundColor: '#000000' },
+  content: { flex: 1, justifyContent: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 20 },
+  backButton: { padding: 5 },
+  title: { fontSize: 24, fontWeight: '700', color: '#FFFFFF' },
+  placeholder: { width: 34 },
+  formContainer: { paddingHorizontal: 20, gap: 20 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1A1A', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16 },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, fontSize: 16, color: '#FFFFFF' },
+  errorText: { color: '#DC2626', fontSize: 12, marginTop: 6, marginLeft: 4 },
+  loginButton: { backgroundColor: '#D4AF37', borderRadius: 12, paddingVertical: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20 },
+  loginButtonDisabled: { backgroundColor: '#7F6A28' },
+  loginButtonText: { fontSize: 16, fontWeight: '600', color: '#000000' },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 20, backgroundColor: '#1A1A1A', marginTop: 'auto' },
+  footerCenter: { flexDirection: 'row', alignItems: 'center' },
+  footerIcon: { width: 24, height: 24, backgroundColor: '#000000', borderRadius: 4, justifyContent: 'center', alignItems: 'center', marginRight: 8 },
+  footerIconText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  footerText: { fontSize: 14, fontWeight: '500', color: '#FFFFFF' },
 });
 
-export default CustomerLogin;
+export default DriverLogin;
