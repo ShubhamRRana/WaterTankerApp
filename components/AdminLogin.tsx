@@ -63,13 +63,15 @@ const AdminLogin = ({ onBack, onLogin, onCreateAccount }: Props): React.ReactEle
               placeholderTextColor="#B0B0B0"
               value={phoneNumber}
               onChangeText={(text) => {
-                setPhoneNumber(text);
+                const digits = text.replace(/\D/g, '').slice(0, 10);
+                setPhoneNumber(digits);
                 if (errors.phoneNumber) {
-                  setErrors((prev) => ({ ...prev, phoneNumber: validatePhone(text) }));
+                  setErrors((prev) => ({ ...prev, phoneNumber: validatePhone(digits) }));
                 }
               }}
               keyboardType="phone-pad"
               autoCapitalize="none"
+              maxLength={10}
             />
           </View>
           {errors.phoneNumber ? <Text style={styles.errorText}>{errors.phoneNumber}</Text> : null}

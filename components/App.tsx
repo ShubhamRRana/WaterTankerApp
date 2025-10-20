@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, Dimensions, Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RoleSelection from './RoleSelection';
 import CustomerLogin from './CustomerLogin';
@@ -69,7 +69,6 @@ const App = (): React.ReactElement => {
   };
 
   const handleLogin = (role: RoleId, credentials: Credentials): void => {
-    console.log(`${role} login attempted with:`, credentials);
     if (role === 'customer') {
       setCurrentScreen('customerDashboard');
     }
@@ -98,12 +97,10 @@ const App = (): React.ReactElement => {
   };
 
   const handleRegistration = (userData: Record<string, unknown>): void => {
-    console.log('Registration successful:', userData);
     setCurrentScreen('customerLogin');
   };
 
   const handleAdminRegistration = (userData: Record<string, unknown>): void => {
-    console.log('Admin registration successful:', userData);
     setCurrentScreen('adminLogin');
   };
 
@@ -187,8 +184,18 @@ const App = (): React.ReactElement => {
           <BookTanker
             onBack={() => setCurrentScreen('customerDashboard')}
             onSubmit={(payload) => {
-              console.log('Book tanker request:', payload);
-              setCurrentScreen('customerDashboard');
+              const bookingId = `WT-${Date.now().toString(36).toUpperCase()}`;
+              Alert.alert(
+                'Tanker booked successfully',
+                `Your booking ID is ${bookingId}. Please save it for tracking.`,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => setCurrentScreen('customerDashboard'),
+                  },
+                ],
+                { cancelable: false }
+              );
             }}
           />
         );
