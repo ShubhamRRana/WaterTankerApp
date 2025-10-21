@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, Animated, Dimensions, Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import RoleSelection from './RoleSelection';
 import CustomerLogin from './CustomerLogin';
 import CustomerRegistration from './CustomerRegistration';
@@ -13,12 +14,57 @@ import OwnerDashboard from './OwnerDashboard';
 import FleetManagement from './FleetManagement';
 import AddVehicle from './AddVehicle';
 import DriversManagement from './DriversManagement';
+import AddDriver from './AddDriver';
+import EditDriver from './EditDriver';
+import TrackTanker from './TrackTanker';
 
 export type RoleId = 'customer' | 'admin' | 'driver';
 
+const DRIVERS_STORAGE_KEY = '@water_tanker_drivers';
+const USERS_STORAGE_KEY = '@water_tanker_users';
+const ORDERS_STORAGE_KEY = '@water_tanker_orders';
+
 type Credentials = { phoneNumber: string; password: string };
 
+type User = {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  password: string;
+  role: RoleId;
+  createdAt: string;
+};
+
+type Order = {
+  id: string;
+  bookingId: string;
+  userId: string;
+  name: string;
+  address: string;
+  date: string;
+  time: string;
+  amount: number;
+  status: 'pending' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
+  tankerSize: string;
+  agency: string;
+  comments?: string;
+  createdAt: string;
+};
+
 type TouchPosition = { x: number; y: number };
+
+type Driver = {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  licenseNumber: string;
+  licenseExpiryDate: string | null;
+  address: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  joiningDate: string | null;
+  monthlySalary: string;
+};
 
 type CurrentScreen =
   | 'roleSelection'
@@ -30,16 +76,119 @@ type CurrentScreen =
   | 'customerDashboard'
   | 'ownerDashboard'
   | 'bookTanker'
+  | 'trackTanker'
   | 'fleetManagement'
   | 'addVehicle'
-  | 'driversManagement';
+  | 'driversManagement'
+  | 'addDriver'
+  | 'editDriver';
 
 const App = (): React.ReactElement => {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>('roleSelection');
   const [selectedRole, setSelectedRole] = useState<RoleId | null>(null);
   const [touchPosition, setTouchPosition] = useState<TouchPosition>({ x: 0, y: 0 });
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [reorderData, setReorderData] = useState<{
+    name?: string;
+    address?: string;
+    tankerSize?: '10k' | '20k';
+    agency?: string;
+  } | null>(null);
   const slideAnimation = useRef(new Animated.Value(Dimensions.get('window').height)).current;
   const isAnimating = useRef(false);
+
+  // Load data from AsyncStorage on app startup
+  useEffect(() => {
+    loadDrivers();
+    loadUsers();
+    loadOrders();
+  }, []);
+
+  const loadDrivers = async (): Promise<void> => {
+    try {
+      const savedDrivers = await AsyncStorage.getItem(DRIVERS_STORAGE_KEY);
+      if (savedDrivers) {
+        const driversData = JSON.parse(savedDrivers);
+        setDrivers(driversData);
+      }
+    } catch (error) {
+      console.error('Error loading drivers:', error);
+    }
+  };
+
+  const saveDrivers = async (driversToSave: Driver[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(DRIVERS_STORAGE_KEY, JSON.stringify(driversToSave));
+    } catch (error) {
+      console.error('Error saving drivers:', error);
+    }
+  };
+
+  const loadUsers = async (): Promise<void> => {
+    try {
+      const savedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+      if (savedUsers) {
+        const usersData = JSON.parse(savedUsers);
+        setUsers(usersData);
+      } else {
+        // Initialize with sample users for testing
+        const sampleUsers: User[] = [
+          {
+            id: 'USR-SAMPLE1',
+            name: 'John Doe',
+            phoneNumber: '9876543210',
+            password: 'password123',
+            role: 'customer',
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: 'USR-SAMPLE2',
+            name: 'Admin User',
+            phoneNumber: '9876543211',
+            password: 'admin123',
+            role: 'admin',
+            createdAt: new Date().toISOString(),
+          }
+        ];
+        setUsers(sampleUsers);
+        await saveUsers(sampleUsers);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    }
+  };
+
+  const saveUsers = async (usersToSave: User[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(usersToSave));
+    } catch (error) {
+      console.error('Error saving users:', error);
+    }
+  };
+
+  const loadOrders = async (): Promise<void> => {
+    try {
+      const savedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
+      if (savedOrders) {
+        const ordersData = JSON.parse(savedOrders);
+        setOrders(ordersData);
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    }
+  };
+
+  const saveOrders = async (ordersToSave: Order[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(ordersToSave));
+    } catch (error) {
+      console.error('Error saving orders:', error);
+    }
+  };
 
   const handleRoleSelect = (roleId: RoleId, position: TouchPosition = { x: 0, y: 0 }): void => {
     if (isAnimating.current) return;
@@ -77,26 +226,68 @@ const App = (): React.ReactElement => {
   };
 
   const handleLogin = (role: RoleId, credentials: Credentials): void => {
-    if (role === 'customer') {
-      setCurrentScreen('customerDashboard');
-    }
-    if (role === 'admin') {
-      setCurrentScreen('ownerDashboard');
+    // Find user with matching credentials
+    const user = users.find(u => 
+      u.phoneNumber === credentials.phoneNumber && 
+      u.password === credentials.password && 
+      u.role === role
+    );
+
+    if (user) {
+      setCurrentUser(user);
+      if (role === 'customer') {
+        setCurrentScreen('customerDashboard');
+      } else if (role === 'admin') {
+        setCurrentScreen('ownerDashboard');
+      } else if (role === 'driver') {
+        setCurrentScreen('customerDashboard'); // Drivers can also access customer features
+      }
+    } else {
+      Alert.alert(
+        'Login Failed',
+        'Invalid credentials. Please check your phone number and password.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
   const handleDashboardNavigation = (screen: 'bookTanker' | 'trackTanker' | 'profile'): void => {
     if (screen === 'bookTanker') {
       setCurrentScreen('bookTanker');
+    } else if (screen === 'trackTanker') {
+      setCurrentScreen('trackTanker');
     }
   };
 
   const handleBackToLogin = (): void => {
+    setCurrentUser(null);
     setCurrentScreen('customerLogin');
   };
 
   const handleBackToAdminLogin = (): void => {
+    setCurrentUser(null);
     setCurrentScreen('adminLogin');
+  };
+
+  const handleLogout = (): void => {
+    setCurrentUser(null);
+    setCurrentScreen('roleSelection');
+  };
+
+  const handleReorder = (order: {
+    address: string;
+    tankerSize: string;
+    agency: string;
+  }): void => {
+    // Convert tanker size from "10k"/"20k" to "10k"/"20k" format
+    const tankerSize = order.tankerSize === '10k' ? '10k' : '20k';
+    
+    setReorderData({
+      address: order.address,
+      tankerSize: tankerSize,
+      agency: order.agency,
+    });
+    setCurrentScreen('bookTanker');
   };
 
   const handleCreateAccount = (): void => {
@@ -107,12 +298,46 @@ const App = (): React.ReactElement => {
     setCurrentScreen('adminRegistration');
   };
 
-  const handleRegistration = (userData: Record<string, unknown>): void => {
-    setCurrentScreen('customerLogin');
+  const handleRegistration = async (userData: Record<string, unknown>): Promise<void> => {
+    const newUser: User = {
+      id: `USR-${Date.now().toString(36).toUpperCase()}`,
+      name: userData.name as string,
+      phoneNumber: userData.phoneNumber as string,
+      password: userData.password as string,
+      role: 'customer',
+      createdAt: new Date().toISOString(),
+    };
+    
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    await saveUsers(updatedUsers);
+    
+    Alert.alert(
+      'Registration Successful',
+      'Your account has been created. Please login to continue.',
+      [{ text: 'OK', onPress: () => setCurrentScreen('customerLogin') }]
+    );
   };
 
-  const handleAdminRegistration = (userData: Record<string, unknown>): void => {
-    setCurrentScreen('adminLogin');
+  const handleAdminRegistration = async (userData: Record<string, unknown>): Promise<void> => {
+    const newUser: User = {
+      id: `USR-${Date.now().toString(36).toUpperCase()}`,
+      name: userData.name as string,
+      phoneNumber: userData.phoneNumber as string,
+      password: userData.password as string,
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+    };
+    
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    await saveUsers(updatedUsers);
+    
+    Alert.alert(
+      'Registration Successful',
+      'Your admin account has been created. Please login to continue.',
+      [{ text: 'OK', onPress: () => setCurrentScreen('adminLogin') }]
+    );
   };
 
   const renderCurrentScreen = (): React.ReactElement => {
@@ -188,6 +413,8 @@ const App = (): React.ReactElement => {
           <CustomerDashboard
             onBack={handleBackToLogin}
             onNavigate={handleDashboardNavigation}
+            currentUser={currentUser}
+            onLogout={handleLogout}
           />
         );
       case 'ownerDashboard':
@@ -196,25 +423,72 @@ const App = (): React.ReactElement => {
             onBack={handleBackToAdminLogin}
             onOpenFleet={() => setCurrentScreen('fleetManagement')}
             onOpenDrivers={() => setCurrentScreen('driversManagement')}
+            currentUser={currentUser}
+            onLogout={handleLogout}
           />
         );
       case 'bookTanker':
         return (
           <BookTanker
-            onBack={() => setCurrentScreen('customerDashboard')}
-            onSubmit={(payload) => {
+            onBack={() => {
+              setReorderData(null);
+              setCurrentScreen('customerDashboard');
+            }}
+            onSubmit={async (payload) => {
+              if (!currentUser) {
+                Alert.alert('Error', 'User not logged in');
+                return;
+              }
+
               const bookingId = `WT-${Date.now().toString(36).toUpperCase()}`;
+              const newOrder: Order = {
+                id: `ORD-${Date.now().toString(36).toUpperCase()}`,
+                bookingId,
+                userId: currentUser.id,
+                name: payload.name,
+                address: payload.address,
+                date: payload.date || '',
+                time: payload.time || '',
+                amount: payload.tankerSize === '10k' ? 2000 : 3000, // Dynamic pricing
+                status: 'pending',
+                tankerSize: payload.tankerSize || '10k',
+                agency: payload.agency,
+                comments: payload.comments,
+                createdAt: new Date().toISOString(),
+              };
+
+              const updatedOrders = [...orders, newOrder];
+              setOrders(updatedOrders);
+              await saveOrders(updatedOrders);
+
               Alert.alert(
                 'Tanker booked successfully',
                 `Your booking ID is ${bookingId}. Please save it for tracking.`,
                 [
                   {
                     text: 'OK',
-                    onPress: () => setCurrentScreen('customerDashboard'),
+                    onPress: () => {
+                      setReorderData(null);
+                      setCurrentScreen('customerDashboard');
+                    },
                   },
                 ],
                 { cancelable: false }
               );
+            }}
+            prefilledData={reorderData}
+          />
+        );
+      case 'trackTanker':
+        return (
+          <TrackTanker
+            onBack={() => setCurrentScreen('customerDashboard')}
+            onReorder={handleReorder}
+            orders={currentUser ? orders.filter(order => order.userId === currentUser.id) : []}
+            currentUser={currentUser}
+            onUpdateOrders={async (updatedOrders) => {
+              setOrders(updatedOrders);
+              await saveOrders(updatedOrders);
             }}
           />
         );
@@ -230,7 +504,6 @@ const App = (): React.ReactElement => {
           <AddVehicle
             onBack={() => setCurrentScreen('fleetManagement')}
             onSubmit={(vehicleData) => {
-              console.log('Vehicle added:', vehicleData);
               // Here you would typically save to your backend/database
             }}
           />
@@ -239,11 +512,74 @@ const App = (): React.ReactElement => {
         return (
           <DriversManagement
             onBack={() => setCurrentScreen('ownerDashboard')}
-            onAddDriver={() => {
-              // TODO: Implement add driver functionality
-              console.log('Add driver pressed');
+            onAddDriver={() => setCurrentScreen('addDriver')}
+            onEditDriver={(driver) => {
+              setEditingDriver(driver);
+              setCurrentScreen('editDriver');
+            }}
+            drivers={drivers}
+          />
+        );
+      case 'addDriver':
+        return (
+          <AddDriver
+            onBack={() => setCurrentScreen('driversManagement')}
+            onSubmit={async (driverData) => {
+              const newDriver: Driver = {
+                id: `DRV-${Date.now().toString(36).toUpperCase()}`,
+                ...driverData,
+              };
+              const updatedDrivers = [...drivers, newDriver];
+              setDrivers(updatedDrivers);
+              await saveDrivers(updatedDrivers);
+              Alert.alert(
+                'Driver added successfully',
+                `${driverData.name} has been added to the drivers list.`,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => setCurrentScreen('driversManagement'),
+                  },
+                ],
+                { cancelable: false }
+              );
             }}
           />
+        );
+      case 'editDriver':
+        return editingDriver ? (
+          <EditDriver
+            onBack={() => {
+              setEditingDriver(null);
+              setCurrentScreen('driversManagement');
+            }}
+            driver={editingDriver}
+            onSubmit={async (driverData) => {
+              const updatedDrivers = drivers.map(driver => 
+                driver.id === editingDriver.id 
+                  ? { ...driver, ...driverData }
+                  : driver
+              );
+              setDrivers(updatedDrivers);
+              await saveDrivers(updatedDrivers);
+              Alert.alert(
+                'Driver updated successfully',
+                `${driverData.name}'s details have been updated.`,
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      setEditingDriver(null);
+                      setCurrentScreen('driversManagement');
+                    },
+                  },
+                ],
+                { cancelable: false }
+              );
+            }}
+          />
+        ) : (
+          <RoleSelection onRoleSelect={handleRoleSelect} />
         );
       default:
         return <RoleSelection onRoleSelect={handleRoleSelect} />;

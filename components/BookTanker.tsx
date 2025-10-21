@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeftIcon } from 'react-native-heroicons/outline';
 
@@ -16,16 +16,22 @@ type Props = {
     agency: string;
     comments: string;
   }) => void;
+  prefilledData?: {
+    name?: string;
+    address?: string;
+    tankerSize?: '10k' | '20k';
+    agency?: string;
+  } | null;
 };
 
-const BookTanker = ({ onBack, onSubmit }: Props): React.ReactElement => {
-  const [name, setName] = useState('');
-  const [address, setAddress] = useState('');
+const BookTanker = ({ onBack, onSubmit, prefilledData }: Props): React.ReactElement => {
+  const [name, setName] = useState(prefilledData?.name || '');
+  const [address, setAddress] = useState(prefilledData?.address || '');
   const [dateInput, setDateInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
   const [meridiem, setMeridiem] = useState<'AM' | 'PM'>('AM');
-  const [tankerSize, setTankerSize] = useState<'10k' | '20k' | null>(null);
-  const [agency, setAgency] = useState('');
+  const [tankerSize, setTankerSize] = useState<'10k' | '20k' | null>(prefilledData?.tankerSize || null);
+  const [agency, setAgency] = useState(prefilledData?.agency || '');
   const [comments, setComments] = useState('');
 
   const [errors, setErrors] = useState<{ name: string; address: string; date: string; time: string; tankerSize: string; agency: string }>({ name: '', address: '', date: '', time: '', tankerSize: '', agency: '' });
@@ -56,15 +62,16 @@ const BookTanker = ({ onBack, onSubmit }: Props): React.ReactElement => {
     if (!name.trim()) next.name = 'Name is required';
     if (!address.trim()) next.address = 'Address is required';
     const d = parseDateFromInput();
-    if (!dateInput || dateInput.length < 10 || !d) next.date = 'Enter a valid date (DD/MM/YYYY)';
-    else {
+    if (!dateInput || !d) {
+      next.date = 'Enter a valid date (DD/MM/YYYY)';
+    } else {
       const today = new Date();
       const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const startEntered = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       if (startEntered < startToday) next.date = 'Cannot accept past date';
     }
     const t = parseTimeFromInput();
-    if (!timeInput || timeInput.length < 5 || !t) next.time = 'Enter a valid time (HH:MM)';
+    if (!timeInput || !t) next.time = 'Enter a valid time (HH:MM)';
     if (!tankerSize) next.tankerSize = 'Select tanker quantity';
     if (!agency.trim()) next.agency = 'Agency is required';
     return next;
@@ -100,7 +107,17 @@ const BookTanker = ({ onBack, onSubmit }: Props): React.ReactElement => {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.content} 
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.field}>
           <Text style={styles.label}>Name</Text>
           <TextInput value={name} onChangeText={(v)=>{ setName(v); setErrors((prev)=>({...prev, name: v.trim()? '': 'Name is required'})); }} placeholder="Enter your name" placeholderTextColor="#6B7280" style={styles.input} />
@@ -128,7 +145,15 @@ const BookTanker = ({ onBack, onSubmit }: Props): React.ReactElement => {
                   setDateInput(out);
                   // live date validation
                   const d = parseDateFromInput();
-                  setErrors((prev)=> ({...prev, date: (!out || out.length < 10 || !d)? 'Enter a valid date (DD/MM/YYYY)': (()=>{ const today=new Date(); const startToday=new Date(today.getFullYear(),today.getMonth(),today.getDate()); if(!d) return 'Enter a valid date (DD/MM/YYYY)'; const startEntered=new Date(d.getFullYear(),d.getMonth(),d.getDate()); return startEntered < startToday ? 'Cannot accept past date' : ''; })()}));
+                  setErrors((prev) => ({
+                    ...prev, 
+                    date: (!out || !d) ? 'Enter a valid date (DD/MM/YYYY)' : (() => {
+                      const today = new Date();
+                      const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                      const startEntered = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                      return startEntered < startToday ? 'Cannot accept past date' : '';
+                    })()
+                  }));
                 }}
                 placeholder="__ / __ / ____"
                 placeholderTextColor="#6B7280"
@@ -151,8 +176,8 @@ const BookTanker = ({ onBack, onSubmit }: Props): React.ReactElement => {
                     if (digits.length <= 2) out = digits;
                     else out = `${digits.slice(0, 2)}:${digits.slice(2)}`;
                     setTimeInput(out);
-                    const tOk = (()=>{ const digits = v.replace(/[^0-9]/g, '').slice(0, 4); if (digits.length < 4) return false; const hh = parseInt(digits.slice(0,2)||'0',10); const mm = parseInt(digits.slice(2)||'0',10); return hh>=1 && hh<=12 && mm>=0 && mm<=59; })();
-                    setErrors((prev)=> ({...prev, time: (!out || out.length < 5 || !tOk)? 'Enter a valid time (HH:MM)' : ''}));
+                    const t = parseTimeFromInput();
+                    setErrors((prev) => ({ ...prev, time: (!out || !t) ? 'Enter a valid time (HH:MM)' : '' }));
                   }}
                   placeholder="__ : __"
                   placeholderTextColor="#6B7280"
@@ -194,7 +219,8 @@ const BookTanker = ({ onBack, onSubmit }: Props): React.ReactElement => {
           <Text style={styles.label}>Additional comments</Text>
           <TextInput value={comments} onChangeText={setComments} placeholder="Any instructions for the driver" placeholderTextColor="#6B7280" style={[styles.input, { height: 96, textAlignVertical: 'top' }]} multiline />
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={styles.footer}>
         <TouchableOpacity style={[styles.bookButton, !isFormValid() && { opacity: 0.5 }]} onPress={handleSubmit} disabled={!isFormValid()} activeOpacity={0.9}>
@@ -210,7 +236,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#1A1A1A', borderBottomWidth: 1, borderBottomColor: '#2A2A2A' },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', color: '#FFFFFF', fontSize: 20, fontWeight: '600' },
-  content: { paddingHorizontal: 20, paddingVertical: 16 },
+  keyboardAvoidingView: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingVertical: 16, paddingBottom: 120 },
   field: { marginBottom: 16 },
   label: { color: '#FFFFFF', fontSize: 14, marginBottom: 8 },
   input: { backgroundColor: '#1A1A1A', borderWidth: 1, borderColor: '#2A2A2A', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, color: '#FFFFFF', fontSize: 16 },

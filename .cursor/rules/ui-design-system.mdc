@@ -7,6 +7,8 @@ Dont update the README.md file with minor changes. Update only the major changes
 
 For every screenshot attached dont use the design shown in the image, use the UI design what we are using for our Project.
 
+For and dates anywhere in the project, check the logic and validation we have used for the date button in the BookTanker.tsx page.
+
 # UI Design System
 
 ## Color Palette

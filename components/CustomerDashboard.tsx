@@ -3,12 +3,24 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TruckIcon, MapPinIcon, UserIcon, ArrowLeftIcon } from 'react-native-heroicons/outline';
 
+type User = {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  password: string;
+  role: 'customer' | 'admin' | 'driver';
+  createdAt: string;
+};
+
 type Props = {
   onBack: () => void;
   onNavigate: (screen: 'bookTanker' | 'trackTanker' | 'profile') => void;
+  currentUser: User | null;
+  onLogout: () => void;
 };
 
-const CustomerDashboard = ({ onBack, onNavigate }: Props): React.ReactElement => {
+const CustomerDashboard = ({ onBack, onNavigate, currentUser, onLogout }: Props): React.ReactElement => {
+  // Component updated to include onLogout prop
   const [selectedButton, setSelectedButton] = useState<'bookTanker' | 'trackTanker' | 'profile' | null>(null);
   const [buttonAnimations] = useState({
     bookTanker: new Animated.Value(0),
@@ -46,9 +58,10 @@ const CustomerDashboard = ({ onBack, onNavigate }: Props): React.ReactElement =>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Customer Dashboard</Text>
-          <Text style={styles.headerSubtitle}>Welcome back!</Text>
+          <Text style={styles.headerSubtitle}>
+            Welcome back, {currentUser?.name || 'User'}!
+          </Text>
         </View>
-        <View style={styles.headerSpacer} />
       </View>
 
       {/* Dashboard Buttons */}
@@ -93,7 +106,6 @@ const styles = StyleSheet.create({
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '600', color: '#FFFFFF', marginBottom: 2 },
   headerSubtitle: { fontSize: 14, color: '#9CA3AF' },
-  headerSpacer: { width: 40 },
   buttonsContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 32, gap: 16 },
   buttonWrapper: { marginBottom: 4 },
   dashboardButton: { backgroundColor: '#1A1A1A', borderRadius: 12, borderLeftWidth: 4, padding: 20, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 8 },

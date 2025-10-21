@@ -2,10 +2,21 @@ import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
+type User = {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  password: string;
+  role: 'customer' | 'admin' | 'driver';
+  createdAt: string;
+};
+
 type Props = {
   onBack: () => void;
   onOpenFleet?: () => void;
   onOpenDrivers?: () => void;
+  currentUser: User | null;
+  onLogout: () => void;
 };
 
 const metricCards = [
@@ -25,7 +36,7 @@ const quickActions = [
   { id: 'diesel', label: 'Add Diesel Expenses', icon: '⛽' },
 ] as const;
 
-const OwnerDashboard = ({ onBack, onOpenFleet, onOpenDrivers }: Props): React.ReactElement => {
+const OwnerDashboard = ({ onBack, onOpenFleet, onOpenDrivers, currentUser, onLogout }: Props): React.ReactElement => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}> 
@@ -34,9 +45,13 @@ const OwnerDashboard = ({ onBack, onOpenFleet, onOpenDrivers }: Props): React.Re
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Owner Dashboard</Text>
-          <Text style={styles.headerSubtitle}>Manage your water tanker business</Text>
+          <Text style={styles.headerSubtitle}>
+            Welcome, {currentUser?.name || 'Admin'}!
+          </Text>
         </View>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity style={styles.logoutButton} onPress={onLogout} activeOpacity={0.7}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -79,6 +94,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, color: '#FFFFFF', fontWeight: '700' },
   headerSubtitle: { fontSize: 14, color: '#9CA3AF', marginTop: 2 },
   headerSpacer: { width: 36 },
+  logoutButton: { backgroundColor: '#DC2626', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
+  logoutButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
   content: { padding: 16, paddingBottom: 40 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   metricCard: { width: '48%', backgroundColor: '#1A1A1A', borderRadius: 12, paddingVertical: 18, paddingHorizontal: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2A2A2A', shadowColor: '#000000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
