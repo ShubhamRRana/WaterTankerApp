@@ -17,12 +17,16 @@ import DriversManagement from './DriversManagement';
 import AddDriver from './AddDriver';
 import EditDriver from './EditDriver';
 import TrackTanker from './TrackTanker';
+import CustomerProfile from './CustomerProfile';
+import PersonalInformation from './PersonalInformation';
+import OrderHistory from './OrderHistory';
 
 export type RoleId = 'customer' | 'admin' | 'driver';
 
 const DRIVERS_STORAGE_KEY = '@water_tanker_drivers';
 const USERS_STORAGE_KEY = '@water_tanker_users';
 const ORDERS_STORAGE_KEY = '@water_tanker_orders';
+const VEHICLES_STORAGE_KEY = '@water_tanker_vehicles';
 
 type Credentials = { phoneNumber: string; password: string };
 
@@ -33,6 +37,7 @@ type User = {
   password: string;
   role: RoleId;
   createdAt: string;
+  address?: string;
 };
 
 type Order = {
@@ -44,8 +49,9 @@ type Order = {
   date: string;
   time: string;
   amount: number;
+  totalAmount: number;
   status: 'pending' | 'confirmed' | 'in-transit' | 'delivered' | 'cancelled';
-  tankerSize: string;
+  tankerSize: '10k' | '20k';
   agency: string;
   comments?: string;
   createdAt: string;
@@ -66,6 +72,16 @@ type Driver = {
   monthlySalary: string;
 };
 
+type Vehicle = {
+  id: string;
+  vehicleNumber: string;
+  capacity: string;
+  lastServiceDate: string;
+  nextServiceDate: string;
+  insuranceExpiryDate: string;
+  createdAt: string;
+};
+
 type CurrentScreen =
   | 'roleSelection'
   | 'customerLogin'
@@ -77,6 +93,9 @@ type CurrentScreen =
   | 'ownerDashboard'
   | 'bookTanker'
   | 'trackTanker'
+  | 'customerProfile'
+  | 'personalInformation'
+  | 'orderHistory'
   | 'fleetManagement'
   | 'addVehicle'
   | 'driversManagement'
@@ -91,6 +110,7 @@ const App = (): React.ReactElement => {
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [reorderData, setReorderData] = useState<{
     name?: string;
@@ -106,6 +126,7 @@ const App = (): React.ReactElement => {
     loadDrivers();
     loadUsers();
     loadOrders();
+    loadVehicles();
   }, []);
 
   const loadDrivers = async (): Promise<void> => {
@@ -139,11 +160,12 @@ const App = (): React.ReactElement => {
         const sampleUsers: User[] = [
           {
             id: 'USR-SAMPLE1',
-            name: 'John Doe',
+            name: 'Demo Customer',
             phoneNumber: '9876543210',
             password: 'password123',
             role: 'customer',
             createdAt: new Date().toISOString(),
+            address: '123 Main St, New Delhi',
           },
           {
             id: 'USR-SAMPLE2',
@@ -175,7 +197,12 @@ const App = (): React.ReactElement => {
       const savedOrders = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
       if (savedOrders) {
         const ordersData = JSON.parse(savedOrders);
-        setOrders(ordersData);
+        // Migrate existing orders to include totalAmount field
+        const migratedOrders = ordersData.map((order: any) => ({
+          ...order,
+          totalAmount: order.totalAmount || order.amount || 0,
+        }));
+        setOrders(migratedOrders);
       }
     } catch (error) {
       console.error('Error loading orders:', error);
@@ -187,6 +214,26 @@ const App = (): React.ReactElement => {
       await AsyncStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(ordersToSave));
     } catch (error) {
       console.error('Error saving orders:', error);
+    }
+  };
+
+  const loadVehicles = async (): Promise<void> => {
+    try {
+      const savedVehicles = await AsyncStorage.getItem(VEHICLES_STORAGE_KEY);
+      if (savedVehicles) {
+        const vehiclesData = JSON.parse(savedVehicles);
+        setVehicles(vehiclesData);
+      }
+    } catch (error) {
+      console.error('Error loading vehicles:', error);
+    }
+  };
+
+  const saveVehicles = async (vehiclesToSave: Vehicle[]): Promise<void> => {
+    try {
+      await AsyncStorage.setItem(VEHICLES_STORAGE_KEY, JSON.stringify(vehiclesToSave));
+    } catch (error) {
+      console.error('Error saving vehicles:', error);
     }
   };
 
@@ -256,6 +303,8 @@ const App = (): React.ReactElement => {
       setCurrentScreen('bookTanker');
     } else if (screen === 'trackTanker') {
       setCurrentScreen('trackTanker');
+    } else if (screen === 'profile') {
+      setCurrentScreen('customerProfile');
     }
   };
 
@@ -272,6 +321,36 @@ const App = (): React.ReactElement => {
   const handleLogout = (): void => {
     setCurrentUser(null);
     setCurrentScreen('roleSelection');
+  };
+
+  const handleUpdateProfile = async (updatedUser: Partial<User>): Promise<void> => {
+    if (!currentUser) return;
+    
+    const updatedUsers = users.map(user => 
+      user.id === currentUser.id 
+        ? { ...user, ...updatedUser }
+        : user
+    );
+    
+    setUsers(updatedUsers);
+    await saveUsers(updatedUsers);
+    
+    // Update current user
+    setCurrentUser({ ...currentUser, ...updatedUser });
+    
+    Alert.alert(
+      'Profile Updated',
+      'Your profile has been updated successfully.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleProfileNavigation = (screen: 'personalInformation' | 'orderHistory'): void => {
+    if (screen === 'personalInformation') {
+      setCurrentScreen('personalInformation');
+    } else if (screen === 'orderHistory') {
+      setCurrentScreen('orderHistory');
+    }
   };
 
   const handleReorder = (order: {
@@ -441,6 +520,7 @@ const App = (): React.ReactElement => {
               }
 
               const bookingId = `WT-${Date.now().toString(36).toUpperCase()}`;
+              const orderAmount = payload.tankerSize === '10k' ? 600 : 1200;
               const newOrder: Order = {
                 id: `ORD-${Date.now().toString(36).toUpperCase()}`,
                 bookingId,
@@ -449,7 +529,8 @@ const App = (): React.ReactElement => {
                 address: payload.address,
                 date: payload.date || '',
                 time: payload.time || '',
-                amount: payload.tankerSize === '10k' ? 2000 : 3000, // Dynamic pricing
+                amount: orderAmount,
+                totalAmount: orderAmount,
                 status: 'pending',
                 tankerSize: payload.tankerSize || '10k',
                 agency: payload.agency,
@@ -492,19 +573,59 @@ const App = (): React.ReactElement => {
             }}
           />
         );
+      case 'customerProfile':
+        return (
+          <CustomerProfile
+            onBack={() => setCurrentScreen('customerDashboard')}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            orders={currentUser ? orders.filter(order => order.userId === currentUser.id) : []}
+            onUpdateProfile={handleUpdateProfile}
+            onNavigate={handleProfileNavigation}
+          />
+        );
+      case 'personalInformation':
+        return (
+          <PersonalInformation
+            onBack={() => setCurrentScreen('customerProfile')}
+            currentUser={currentUser}
+            onUpdateProfile={handleUpdateProfile}
+          />
+        );
+      case 'orderHistory':
+        return (
+          <OrderHistory
+            onBack={() => setCurrentScreen('customerProfile')}
+            currentUser={currentUser}
+            orders={currentUser ? orders.filter(order => order.userId === currentUser.id) : []}
+            onReorder={handleReorder}
+          />
+        );
       case 'fleetManagement':
         return (
           <FleetManagement
             onBack={() => setCurrentScreen('ownerDashboard')}
             onAddVehicle={() => setCurrentScreen('addVehicle')}
+            vehicles={vehicles}
           />
         );
       case 'addVehicle':
         return (
           <AddVehicle
             onBack={() => setCurrentScreen('fleetManagement')}
-            onSubmit={(vehicleData) => {
-              // Here you would typically save to your backend/database
+            onSubmit={async (vehicleData) => {
+              const newVehicle: Vehicle = {
+                id: `VEH-${Date.now().toString(36).toUpperCase()}`,
+                vehicleNumber: vehicleData.vehicleNumber,
+                capacity: vehicleData.capacity,
+                lastServiceDate: vehicleData.lastServiceDate,
+                nextServiceDate: vehicleData.nextServiceDate,
+                insuranceExpiryDate: vehicleData.insuranceExpiryDate,
+                createdAt: new Date().toISOString(),
+              };
+              const updatedVehicles = [...vehicles, newVehicle];
+              setVehicles(updatedVehicles);
+              await saveVehicles(updatedVehicles);
             }}
           />
         );

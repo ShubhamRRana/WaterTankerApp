@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Modal, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeftIcon, FunnelIcon, Bars3Icon, ArrowDownTrayIcon } from 'react-native-heroicons/outline';
-import { Paths, File } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import { ArrowLeftIcon, FunnelIcon, Bars3Icon } from 'react-native-heroicons/outline';
 
 type Props = {
   onBack: () => void;
@@ -33,8 +31,9 @@ type Order = {
   date: string;
   time: string;
   amount: number;
+  totalAmount: number;
   status: OrderStatus;
-  tankerSize: string;
+  tankerSize: '10k' | '20k';
   agency: string;
   comments?: string;
   createdAt: string;
@@ -128,64 +127,6 @@ const TrackTanker = ({ onBack, onReorder, orders, currentUser, onUpdateOrders }:
     onUpdateOrders(updatedOrders);
   };
 
-  const handleExportToExcel = async (): Promise<void> => {
-    try {
-      // Prepare CSV data
-      const csvHeaders = 'S.No,Booking ID,Date,Time,Status,Agency,Tanker Size,Amount (₹),Address\n';
-      const csvRows = filteredOrders.map((order, index) => {
-        return [
-          index + 1,
-          order.bookingId,
-          order.date ? new Date(order.date).toLocaleDateString() : 'N/A',
-          order.time ? new Date(order.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
-          getStatusLabel(order.status),
-          order.agency,
-          order.tankerSize,
-          order.amount,
-          `"${order.address}"` // Wrap address in quotes to handle commas
-        ].join(',');
-      }).join('\n');
-      
-      const csvContent = csvHeaders + csvRows;
-
-      // Create filename with unique timestamp (including milliseconds)
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `Order_History_${timestamp}.csv`;
-      
-      // Create file using new Expo FileSystem API
-      const file = new File(Paths.cache, filename);
-      await file.create();
-      await file.write(csvContent);
-
-      // Check if sharing is available
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(file.uri, {
-          mimeType: 'text/csv',
-          dialogTitle: 'Export Order History',
-        });
-        
-        Alert.alert(
-          'Export Successful',
-          'Order history has been exported and is ready to share.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert(
-          'Export Complete',
-          `Order history has been saved as ${filename}.`,
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Export error:', error);
-      Alert.alert(
-        'Export Failed',
-        'Failed to export order history. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -271,7 +212,7 @@ const TrackTanker = ({ onBack, onReorder, orders, currentUser, onUpdateOrders }:
                 </View>
                 <View style={styles.priceItem}>
                   <Text style={styles.priceLabel}>Price:</Text>
-                  <Text style={styles.priceValue}>₹{order.amount.toLocaleString()}</Text>
+                  <Text style={styles.priceValue}>₹{order.totalAmount.toLocaleString()}</Text>
                 </View>
               </View>
               
@@ -298,19 +239,6 @@ const TrackTanker = ({ onBack, onReorder, orders, currentUser, onUpdateOrders }:
         )}
       </ScrollView>
 
-      {/* Fixed Export Button at Bottom */}
-      {filteredOrders.length > 0 && (
-        <View style={styles.fixedBottomContainer}>
-          <TouchableOpacity 
-            style={styles.fixedDownloadButton} 
-            onPress={handleExportToExcel}
-            activeOpacity={0.8}
-          >
-            <ArrowDownTrayIcon size={20} color="#FFFFFF" />
-            <Text style={styles.fixedDownloadButtonText}>Export Data</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Filter Modal */}
       <Modal
@@ -481,7 +409,6 @@ const styles = StyleSheet.create({
   ordersContainer: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingBottom: 80, // Add padding to prevent content from being hidden behind fixed button
   },
   emptyState: {
     flex: 1,
@@ -711,37 +638,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'center',
-  },
-  fixedBottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#000000',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#2A2A2A',
-  },
-  fixedDownloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#D4AF37',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fixedDownloadButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
   },
 });
 

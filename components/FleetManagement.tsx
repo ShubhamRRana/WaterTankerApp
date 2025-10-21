@@ -2,21 +2,85 @@ import React, { useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
+type Vehicle = {
+  id: string;
+  vehicleNumber: string;
+  capacity: string;
+  lastServiceDate: string;
+  nextServiceDate: string;
+  insuranceExpiryDate: string;
+  createdAt: string;
+};
+
 type Props = {
   onBack: () => void;
   onAddVehicle?: () => void;
+  vehicles: Vehicle[];
 };
 
 type FilterKey = 'all' | 'maintenance' | 'insurance';
 
-const FleetManagement = ({ onBack, onAddVehicle }: Props): React.ReactElement => {
+const FleetManagement = ({ onBack, onAddVehicle, vehicles }: Props): React.ReactElement => {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
 
-  const summary = useMemo(() => ({
-    totalVehicles: 0,
-    dueMaintenance: 0,
-    insuranceExpiring: 0,
-  }), []);
+  const parseDateFromInput = (dateString: string): Date | null => {
+    const digitsDate = dateString.replace(/[^0-9]/g, '').slice(0, 8);
+    const d = parseInt(digitsDate.slice(0, 2) || '0', 10);
+    const m = parseInt(digitsDate.slice(2, 4) || '0', 10);
+    const y = parseInt(digitsDate.slice(4, 8) || '0', 10);
+    if (y < 1000 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+    const candidate = new Date(y, m - 1, d);
+    if (candidate.getFullYear() !== y || candidate.getMonth() !== m - 1 || candidate.getDate() !== d) return null;
+    return candidate;
+  };
+
+  const summary = useMemo(() => {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    let dueMaintenance = 0;
+    let insuranceExpiring = 0;
+
+    vehicles.forEach(vehicle => {
+      const nextServiceDate = parseDateFromInput(vehicle.nextServiceDate);
+      const insuranceExpiryDate = parseDateFromInput(vehicle.insuranceExpiryDate);
+      
+      if (nextServiceDate && nextServiceDate <= todayStart) {
+        dueMaintenance++;
+      }
+      
+      if (insuranceExpiryDate && insuranceExpiryDate <= todayStart) {
+        insuranceExpiring++;
+      }
+    });
+
+    return {
+      totalVehicles: vehicles.length,
+      dueMaintenance,
+      insuranceExpiring,
+    };
+  }, [vehicles]);
+
+  const filteredVehicles = useMemo(() => {
+    if (activeFilter === 'all') return vehicles;
+    
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    return vehicles.filter(vehicle => {
+      if (activeFilter === 'maintenance') {
+        const nextServiceDate = parseDateFromInput(vehicle.nextServiceDate);
+        return nextServiceDate && nextServiceDate <= todayStart;
+      }
+      
+      if (activeFilter === 'insurance') {
+        const insuranceExpiryDate = parseDateFromInput(vehicle.insuranceExpiryDate);
+        return insuranceExpiryDate && insuranceExpiryDate <= todayStart;
+      }
+      
+      return true;
+    });
+  }, [vehicles, activeFilter]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -72,6 +136,69 @@ const FleetManagement = ({ onBack, onAddVehicle }: Props): React.ReactElement =>
             })}
           </View>
         </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Vehicles ({filteredVehicles.length})</Text>
+          {filteredVehicles.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                {vehicles.length === 0 
+                  ? 'No vehicles in your fleet yet. Add your first vehicle to get started.'
+                  : 'No vehicles match the current filter.'
+                }
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.vehicleList}>
+              {filteredVehicles.map((vehicle) => {
+                const nextServiceDate = parseDateFromInput(vehicle.nextServiceDate);
+                const insuranceExpiryDate = parseDateFromInput(vehicle.insuranceExpiryDate);
+                const today = new Date();
+                const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                
+                const isMaintenanceDue = nextServiceDate && nextServiceDate <= todayStart;
+                const isInsuranceExpiring = insuranceExpiryDate && insuranceExpiryDate <= todayStart;
+                
+                return (
+                  <View key={vehicle.id} style={styles.vehicleCard}>
+                    <View style={styles.vehicleHeader}>
+                      <Text style={styles.vehicleNumber}>{vehicle.vehicleNumber}</Text>
+                      <Text style={styles.vehicleCapacity}>{vehicle.capacity}L</Text>
+                    </View>
+                    <View style={styles.vehicleDetails}>
+                      <View style={styles.vehicleDetailRow}>
+                        <Text style={styles.vehicleDetailLabel}>Next Service:</Text>
+                        <Text style={[styles.vehicleDetailValue, isMaintenanceDue && styles.warningText]}>
+                          {vehicle.nextServiceDate}
+                        </Text>
+                      </View>
+                      <View style={styles.vehicleDetailRow}>
+                        <Text style={styles.vehicleDetailLabel}>Insurance Expiry:</Text>
+                        <Text style={[styles.vehicleDetailValue, isInsuranceExpiring && styles.errorText]}>
+                          {vehicle.insuranceExpiryDate}
+                        </Text>
+                      </View>
+                    </View>
+                    {(isMaintenanceDue || isInsuranceExpiring) && (
+                      <View style={styles.statusBadges}>
+                        {isMaintenanceDue && (
+                          <View style={[styles.statusBadge, styles.warningBadge]}>
+                            <Text style={styles.statusBadgeText}>Maintenance Due</Text>
+                          </View>
+                        )}
+                        {isInsuranceExpiring && (
+                          <View style={[styles.statusBadge, styles.errorBadge]}>
+                            <Text style={styles.statusBadgeText}>Insurance Expiring</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -115,6 +242,26 @@ const styles = StyleSheet.create({
   footer: { position: 'absolute', left: 16, right: 16, bottom: 16 },
   primaryCta: { backgroundColor: '#D4AF37', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   primaryCtaText: { color: '#000000', fontWeight: '700', fontSize: 16 },
+
+  // Vehicle list styles
+  vehicleList: { marginTop: 8 },
+  vehicleCard: { backgroundColor: '#1A1A1A', borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#2A2A2A' },
+  vehicleHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  vehicleNumber: { fontSize: 18, color: '#FFFFFF', fontWeight: '700' },
+  vehicleCapacity: { fontSize: 14, color: '#9CA3AF', fontWeight: '500' },
+  vehicleDetails: { marginBottom: 12 },
+  vehicleDetailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  vehicleDetailLabel: { fontSize: 14, color: '#9CA3AF', fontWeight: '500' },
+  vehicleDetailValue: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
+  warningText: { color: '#D97706' },
+  errorText: { color: '#DC2626' },
+  statusBadges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  warningBadge: { backgroundColor: '#D97706' },
+  errorBadge: { backgroundColor: '#DC2626' },
+  statusBadgeText: { fontSize: 12, color: '#FFFFFF', fontWeight: '600' },
+  emptyState: { padding: 24, alignItems: 'center' },
+  emptyStateText: { fontSize: 16, color: '#9CA3AF', textAlign: 'center', lineHeight: 24 },
 });
 
 export default FleetManagement;
