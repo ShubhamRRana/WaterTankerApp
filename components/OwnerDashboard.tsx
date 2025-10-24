@@ -15,6 +15,7 @@ type Props = {
   onBack: () => void;
   onOpenFleet?: () => void;
   onOpenDrivers?: () => void;
+  onOpenReports?: () => void;
   currentUser: User | null;
   onLogout: () => void;
 };
@@ -36,7 +37,7 @@ const quickActions = [
   { id: 'diesel', label: 'Add Diesel Expenses', icon: '⛽' },
 ] as const;
 
-const OwnerDashboard = ({ onBack, onOpenFleet, onOpenDrivers, currentUser, onLogout }: Props): React.ReactElement => {
+const OwnerDashboard = ({ onBack, onOpenFleet, onOpenDrivers, onOpenReports, currentUser, onLogout }: Props): React.ReactElement => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}> 
@@ -72,7 +73,7 @@ const OwnerDashboard = ({ onBack, onOpenFleet, onOpenDrivers, currentUser, onLog
                 key={a.id}
                 style={styles.actionRow}
                 activeOpacity={0.8}
-                onPress={a.id === 'fleet' ? onOpenFleet : a.id === 'drivers' ? onOpenDrivers : undefined}
+                onPress={a.id === 'fleet' ? onOpenFleet : a.id === 'drivers' ? onOpenDrivers : a.id === 'reports' ? onOpenReports : undefined}
               >
                 <Text style={styles.actionIcon}>{a.icon}</Text>
                 <Text style={styles.actionLabel}>{a.label}</Text>

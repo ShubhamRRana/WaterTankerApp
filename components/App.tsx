@@ -20,6 +20,7 @@ import TrackTanker from './TrackTanker';
 import CustomerProfile from './CustomerProfile';
 import PersonalInformation from './PersonalInformation';
 import OrderHistory from './OrderHistory';
+import BusinessReports from './BusinessReports';
 
 export type RoleId = 'customer' | 'admin' | 'driver';
 
@@ -100,7 +101,8 @@ type CurrentScreen =
   | 'addVehicle'
   | 'driversManagement'
   | 'addDriver'
-  | 'editDriver';
+  | 'editDriver'
+  | 'businessReports';
 
 const App = (): React.ReactElement => {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>('roleSelection');
@@ -502,6 +504,7 @@ const App = (): React.ReactElement => {
             onBack={handleBackToAdminLogin}
             onOpenFleet={() => setCurrentScreen('fleetManagement')}
             onOpenDrivers={() => setCurrentScreen('driversManagement')}
+            onOpenReports={() => setCurrentScreen('businessReports')}
             currentUser={currentUser}
             onLogout={handleLogout}
           />
@@ -701,6 +704,12 @@ const App = (): React.ReactElement => {
           />
         ) : (
           <RoleSelection onRoleSelect={handleRoleSelect} />
+        );
+      case 'businessReports':
+        return (
+          <BusinessReports
+            onBack={() => setCurrentScreen('ownerDashboard')}
+          />
         );
       default:
         return <RoleSelection onRoleSelect={handleRoleSelect} />;
