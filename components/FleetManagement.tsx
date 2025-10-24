@@ -37,20 +37,37 @@ const FleetManagement = ({ onBack, onAddVehicle, vehicles }: Props): React.React
   const summary = useMemo(() => {
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const oneMonthFromNow = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
     
     let dueMaintenance = 0;
     let insuranceExpiring = 0;
+    let maintenanceDaysRemaining = 0;
+    let insuranceDaysRemaining = 0;
 
     vehicles.forEach(vehicle => {
       const nextServiceDate = parseDateFromInput(vehicle.nextServiceDate);
       const insuranceExpiryDate = parseDateFromInput(vehicle.insuranceExpiryDate);
       
-      if (nextServiceDate && nextServiceDate <= todayStart) {
+      // Check for maintenance due within a month
+      if (nextServiceDate && nextServiceDate <= oneMonthFromNow) {
         dueMaintenance++;
+        if (nextServiceDate > todayStart) {
+          const daysDiff = Math.ceil((nextServiceDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+          if (maintenanceDaysRemaining === 0 || daysDiff < maintenanceDaysRemaining) {
+            maintenanceDaysRemaining = daysDiff;
+          }
+        }
       }
       
-      if (insuranceExpiryDate && insuranceExpiryDate <= todayStart) {
+      // Check for insurance expiring within a month
+      if (insuranceExpiryDate && insuranceExpiryDate <= oneMonthFromNow) {
         insuranceExpiring++;
+        if (insuranceExpiryDate > todayStart) {
+          const daysDiff = Math.ceil((insuranceExpiryDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+          if (insuranceDaysRemaining === 0 || daysDiff < insuranceDaysRemaining) {
+            insuranceDaysRemaining = daysDiff;
+          }
+        }
       }
     });
 
@@ -58,6 +75,8 @@ const FleetManagement = ({ onBack, onAddVehicle, vehicles }: Props): React.React
       totalVehicles: vehicles.length,
       dueMaintenance,
       insuranceExpiring,
+      maintenanceDaysRemaining,
+      insuranceDaysRemaining,
     };
   }, [vehicles]);
 
@@ -66,16 +85,17 @@ const FleetManagement = ({ onBack, onAddVehicle, vehicles }: Props): React.React
     
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const oneMonthFromNow = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
     
     return vehicles.filter(vehicle => {
       if (activeFilter === 'maintenance') {
         const nextServiceDate = parseDateFromInput(vehicle.nextServiceDate);
-        return nextServiceDate && nextServiceDate <= todayStart;
+        return nextServiceDate && nextServiceDate <= oneMonthFromNow;
       }
       
       if (activeFilter === 'insurance') {
         const insuranceExpiryDate = parseDateFromInput(vehicle.insuranceExpiryDate);
-        return insuranceExpiryDate && insuranceExpiryDate <= todayStart;
+        return insuranceExpiryDate && insuranceExpiryDate <= oneMonthFromNow;
       }
       
       return true;
@@ -155,9 +175,18 @@ const FleetManagement = ({ onBack, onAddVehicle, vehicles }: Props): React.React
                 const insuranceExpiryDate = parseDateFromInput(vehicle.insuranceExpiryDate);
                 const today = new Date();
                 const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const oneMonthFromNow = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
                 
-                const isMaintenanceDue = nextServiceDate && nextServiceDate <= todayStart;
-                const isInsuranceExpiring = insuranceExpiryDate && insuranceExpiryDate <= todayStart;
+                const isMaintenanceDue = nextServiceDate && nextServiceDate <= oneMonthFromNow;
+                const isInsuranceExpiring = insuranceExpiryDate && insuranceExpiryDate <= oneMonthFromNow;
+                
+                // Calculate days remaining
+                const maintenanceDaysRemaining = nextServiceDate && nextServiceDate > todayStart 
+                  ? Math.ceil((nextServiceDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24))
+                  : 0;
+                const insuranceDaysRemaining = insuranceExpiryDate && insuranceExpiryDate > todayStart 
+                  ? Math.ceil((insuranceExpiryDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24))
+                  : 0;
                 
                 return (
                   <View key={vehicle.id} style={styles.vehicleCard}>
@@ -170,12 +199,22 @@ const FleetManagement = ({ onBack, onAddVehicle, vehicles }: Props): React.React
                         <Text style={styles.vehicleDetailLabel}>Next Service:</Text>
                         <Text style={[styles.vehicleDetailValue, isMaintenanceDue && styles.warningText]}>
                           {vehicle.nextServiceDate}
+                          {maintenanceDaysRemaining > 0 && (
+                            <Text style={styles.daysRemainingText}>
+                              {' '}({maintenanceDaysRemaining} days)
+                            </Text>
+                          )}
                         </Text>
                       </View>
                       <View style={styles.vehicleDetailRow}>
                         <Text style={styles.vehicleDetailLabel}>Insurance Expiry:</Text>
                         <Text style={[styles.vehicleDetailValue, isInsuranceExpiring && styles.errorText]}>
                           {vehicle.insuranceExpiryDate}
+                          {insuranceDaysRemaining > 0 && (
+                            <Text style={styles.daysRemainingText}>
+                              {' '}({insuranceDaysRemaining} days)
+                            </Text>
+                          )}
                         </Text>
                       </View>
                     </View>
@@ -262,6 +301,7 @@ const styles = StyleSheet.create({
   statusBadgeText: { fontSize: 12, color: '#FFFFFF', fontWeight: '600' },
   emptyState: { padding: 24, alignItems: 'center' },
   emptyStateText: { fontSize: 16, color: '#9CA3AF', textAlign: 'center', lineHeight: 24 },
+  daysRemainingText: { fontSize: 12, color: '#9CA3AF', fontWeight: '500' },
 });
 
 export default FleetManagement;

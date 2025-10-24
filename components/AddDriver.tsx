@@ -15,6 +15,7 @@ type Props = {
     emergencyContactPhone: string;
     joiningDate: string | null;
     monthlySalary: string;
+    password: string;
   }) => void;
 };
 
@@ -28,6 +29,8 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
   const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [joiningDate, setJoiningDate] = useState('');
   const [monthlySalary, setMonthlySalary] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const [errors, setErrors] = useState<{
     name: string;
@@ -39,6 +42,8 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
     emergencyContactPhone: string;
     joiningDate: string;
     monthlySalary: string;
+    password: string;
+    confirmPassword: string;
   }>({
     name: '',
     phoneNumber: '',
@@ -49,6 +54,8 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
     emergencyContactPhone: '',
     joiningDate: '',
     monthlySalary: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const parseDateFromInput = (dateInput: string): Date | null => {
@@ -72,6 +79,10 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
     return !isNaN(salaryNum) && salaryNum > 0;
   };
 
+  const validatePassword = (password: string): boolean => {
+    return password.length >= 6;
+  };
+
   const computeErrors = (): typeof errors => {
     const next = {
       name: '',
@@ -83,6 +94,8 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
       emergencyContactPhone: '',
       joiningDate: '',
       monthlySalary: '',
+      password: '',
+      confirmPassword: '',
     };
 
     // Name validation
@@ -168,6 +181,20 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
       next.monthlySalary = 'Enter a valid salary amount';
     }
 
+    // Password validation
+    if (!password.trim()) {
+      next.password = 'Password is required';
+    } else if (!validatePassword(password)) {
+      next.password = 'Password must be at least 6 characters';
+    }
+
+    // Confirm password validation
+    if (!confirmPassword.trim()) {
+      next.confirmPassword = 'Confirm password is required';
+    } else if (confirmPassword !== password) {
+      next.confirmPassword = 'Passwords do not match';
+    }
+
     return next;
   };
 
@@ -196,6 +223,7 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
       emergencyContactPhone: emergencyContactPhone.trim(),
       joiningDate: joiningDateParsed ? joiningDateParsed.toISOString() : null,
       monthlySalary: monthlySalary.trim(),
+      password: password.trim(),
     };
 
     if (onSubmit) {
@@ -417,6 +445,45 @@ const AddDriver = ({ onBack, onSubmit }: Props): React.ReactElement => {
             keyboardType="numeric"
           />
           {!!errors.monthlySalary && <Text style={styles.errorText}>{errors.monthlySalary}</Text>}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Password *</Text>
+          <TextInput
+            value={password}
+            onChangeText={(v) => {
+              setPassword(v);
+              setErrors((prev) => ({
+                ...prev,
+                password: !v.trim() ? 'Password is required' : (validatePassword(v) ? '' : 'Password must be at least 6 characters'),
+                confirmPassword: confirmPassword && confirmPassword !== v ? 'Passwords do not match' : '',
+              }));
+            }}
+            placeholder="Enter password (min 6 characters)"
+            placeholderTextColor="#6B7280"
+            style={styles.input}
+            secureTextEntry
+          />
+          {!!errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Confirm Password *</Text>
+          <TextInput
+            value={confirmPassword}
+            onChangeText={(v) => {
+              setConfirmPassword(v);
+              setErrors((prev) => ({
+                ...prev,
+                confirmPassword: !v.trim() ? 'Confirm password is required' : (v !== password ? 'Passwords do not match' : ''),
+              }));
+            }}
+            placeholder="Confirm your password"
+            placeholderTextColor="#6B7280"
+            style={styles.input}
+            secureTextEntry
+          />
+          {!!errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
         </View>
       </ScrollView>
 
