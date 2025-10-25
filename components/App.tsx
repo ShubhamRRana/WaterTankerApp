@@ -9,6 +9,7 @@ import AdminLogin from './AdminLogin';
 import AdminRegistration from './AdminRegistration';
 import DriverLogin from './DriverLogin';
 import CustomerDashboard from './CustomerDashboard';
+import DriverDashboard from './DriverDashboard';
 import BookTanker from './BookTanker';
 import OwnerDashboard from './OwnerDashboard';
 import FleetManagement from './FleetManagement';
@@ -21,6 +22,8 @@ import CustomerProfile from './CustomerProfile';
 import PersonalInformation from './PersonalInformation';
 import OrderHistory from './OrderHistory';
 import BusinessReports from './BusinessReports';
+import BankAccountManagement from './BankAccountManagement';
+import DieselExpensesPage from './DieselExpensesPage';
 
 export type RoleId = 'customer' | 'admin' | 'driver';
 
@@ -71,6 +74,7 @@ type Driver = {
   emergencyContactPhone: string;
   joiningDate: string | null;
   monthlySalary: string;
+  password: string;
 };
 
 type Vehicle = {
@@ -91,6 +95,7 @@ type CurrentScreen =
   | 'adminRegistration'
   | 'driverLogin'
   | 'customerDashboard'
+  | 'driverDashboard'
   | 'ownerDashboard'
   | 'bookTanker'
   | 'trackTanker'
@@ -102,7 +107,9 @@ type CurrentScreen =
   | 'driversManagement'
   | 'addDriver'
   | 'editDriver'
-  | 'businessReports';
+  | 'bankAccountManagement'
+  | 'businessReports'
+  | 'dieselExpenses';
 
 const App = (): React.ReactElement => {
   const [currentScreen, setCurrentScreen] = useState<CurrentScreen>('roleSelection');
@@ -275,28 +282,54 @@ const App = (): React.ReactElement => {
   };
 
   const handleLogin = (role: RoleId, credentials: Credentials): void => {
-    // Find user with matching credentials
-    const user = users.find(u => 
-      u.phoneNumber === credentials.phoneNumber && 
-      u.password === credentials.password && 
-      u.role === role
-    );
+    if (role === 'driver') {
+      // For drivers, check in the drivers array (only drivers added by owner can login)
+      const driver = drivers.find(d => 
+        d.phoneNumber === credentials.phoneNumber && 
+        d.password === credentials.password
+      );
 
-    if (user) {
-      setCurrentUser(user);
-      if (role === 'customer') {
-        setCurrentScreen('customerDashboard');
-      } else if (role === 'admin') {
-        setCurrentScreen('ownerDashboard');
-      } else if (role === 'driver') {
-        setCurrentScreen('customerDashboard'); // Drivers can also access customer features
+      if (driver) {
+        // Create a user object from driver data for consistency
+        const driverUser: User = {
+          id: driver.id,
+          name: driver.name,
+          phoneNumber: driver.phoneNumber,
+          password: driver.password,
+          role: 'driver',
+          createdAt: driver.joiningDate || new Date().toISOString()
+        };
+        setCurrentUser(driverUser);
+        setCurrentScreen('driverDashboard'); // Redirect drivers to their dashboard
+      } else {
+        Alert.alert(
+          'Login Failed',
+          'Invalid credentials. Only drivers added by the owner can login.',
+          [{ text: 'OK' }]
+        );
       }
     } else {
-      Alert.alert(
-        'Login Failed',
-        'Invalid credentials. Please check your phone number and password.',
-        [{ text: 'OK' }]
+      // For customers and admins, check in the users array
+      const user = users.find(u => 
+        u.phoneNumber === credentials.phoneNumber && 
+        u.password === credentials.password && 
+        u.role === role
       );
+
+      if (user) {
+        setCurrentUser(user);
+        if (role === 'customer') {
+          setCurrentScreen('customerDashboard');
+        } else if (role === 'admin') {
+          setCurrentScreen('ownerDashboard');
+        }
+      } else {
+        Alert.alert(
+          'Login Failed',
+          'Invalid credentials. Please check your phone number and password.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
@@ -498,6 +531,14 @@ const App = (): React.ReactElement => {
             onLogout={handleLogout}
           />
         );
+      case 'driverDashboard':
+        return (
+          <DriverDashboard
+            onBack={handleBackToLogin}
+            onNavigate={handleDashboardNavigation}
+            currentUser={currentUser}
+          />
+        );
       case 'ownerDashboard':
         return (
           <OwnerDashboard
@@ -505,8 +546,11 @@ const App = (): React.ReactElement => {
             onOpenFleet={() => setCurrentScreen('fleetManagement')}
             onOpenDrivers={() => setCurrentScreen('driversManagement')}
             onOpenReports={() => setCurrentScreen('businessReports')}
+            onOpenBankAccount={() => setCurrentScreen('bankAccountManagement')}
+            onOpenDieselExpenses={() => setCurrentScreen('dieselExpenses')}
             currentUser={currentUser}
             onLogout={handleLogout}
+            orders={orders}
           />
         );
       case 'bookTanker':
@@ -638,8 +682,23 @@ const App = (): React.ReactElement => {
             onBack={() => setCurrentScreen('ownerDashboard')}
             onAddDriver={() => setCurrentScreen('addDriver')}
             onEditDriver={(driver) => {
-              setEditingDriver(driver);
+              // Ensure driver has password field for editing
+              const driverWithPassword = {
+                ...driver,
+                password: driver.password || 'default123' // Provide default password for existing drivers
+              };
+              setEditingDriver(driverWithPassword);
               setCurrentScreen('editDriver');
+            }}
+            onDeleteDriver={async (driverToDelete) => {
+              const updatedDrivers = drivers.filter(driver => driver.id !== driverToDelete.id);
+              setDrivers(updatedDrivers);
+              await saveDrivers(updatedDrivers);
+              Alert.alert(
+                'Driver Deleted',
+                `${driverToDelete.name} has been removed from the drivers list.`,
+                [{ text: 'OK' }]
+              );
             }}
             drivers={drivers}
           />
@@ -708,6 +767,18 @@ const App = (): React.ReactElement => {
       case 'businessReports':
         return (
           <BusinessReports
+            onBack={() => setCurrentScreen('ownerDashboard')}
+          />
+        );
+      case 'bankAccountManagement':
+        return (
+          <BankAccountManagement
+            onBack={() => setCurrentScreen('ownerDashboard')}
+          />
+        );
+      case 'dieselExpenses':
+        return (
+          <DieselExpensesPage
             onBack={() => setCurrentScreen('ownerDashboard')}
           />
         );

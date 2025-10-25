@@ -14,6 +14,7 @@ type Driver = {
   emergencyContactPhone: string;
   joiningDate: string | null;
   monthlySalary: string;
+  password: string;
 };
 
 type Props = {
@@ -29,6 +30,7 @@ type Props = {
     emergencyContactPhone: string;
     joiningDate: string | null;
     monthlySalary: string;
+    password: string;
   }) => void;
 };
 
@@ -46,6 +48,7 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
     driver.joiningDate ? new Date(driver.joiningDate).toLocaleDateString('en-GB') : ''
   );
   const [monthlySalary, setMonthlySalary] = useState(driver.monthlySalary);
+  const [password, setPassword] = useState(driver.password);
 
   const [errors, setErrors] = useState<{
     name: string;
@@ -57,6 +60,7 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
     emergencyContactPhone: string;
     joiningDate: string;
     monthlySalary: string;
+    password: string;
   }>({
     name: '',
     phoneNumber: '',
@@ -67,6 +71,7 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
     emergencyContactPhone: '',
     joiningDate: '',
     monthlySalary: '',
+    password: '',
   });
 
   const parseDateFromInput = (dateInput: string): Date | null => {
@@ -101,6 +106,7 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
       emergencyContactPhone: '',
       joiningDate: '',
       monthlySalary: '',
+      password: '',
     };
 
     // Name validation
@@ -186,6 +192,13 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
       next.monthlySalary = 'Enter a valid salary amount';
     }
 
+    // Password validation
+    if (!password.trim()) {
+      next.password = 'Password is required';
+    } else if (password.trim().length < 6) {
+      next.password = 'Password must be at least 6 characters';
+    }
+
     return next;
   };
 
@@ -214,6 +227,7 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
       emergencyContactPhone: emergencyContactPhone.trim(),
       joiningDate: joiningDateParsed ? joiningDateParsed.toISOString() : null,
       monthlySalary: monthlySalary.trim(),
+      password: password.trim(),
     };
 
     if (onSubmit) {
@@ -435,6 +449,25 @@ const EditDriver = ({ onBack, driver, onSubmit }: Props): React.ReactElement => 
             keyboardType="numeric"
           />
           {!!errors.monthlySalary && <Text style={styles.errorText}>{errors.monthlySalary}</Text>}
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Password *</Text>
+          <TextInput
+            value={password}
+            onChangeText={(v) => {
+              setPassword(v);
+              setErrors((prev) => ({
+                ...prev,
+                password: !v.trim() ? 'Password is required' : (v.trim().length < 6 ? 'Password must be at least 6 characters' : ''),
+              }));
+            }}
+            placeholder="Enter driver password"
+            placeholderTextColor="#6B7280"
+            style={styles.input}
+            secureTextEntry
+          />
+          {!!errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
       </ScrollView>
 
